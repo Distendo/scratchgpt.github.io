@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch GPT-3.5 Turbo Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        textarea {
+            width: 80%;
+            height: 100px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+        }
+        #response {
+            white-space: pre-wrap;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+            text-align: left;
+            max-width: 80%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Scratch GPT-3.5 Turbo</h1>
+
+    <div id="editor-container">
+        <h2>Ask GPT-3.5</h2>
+        <textarea id="prompt" placeholder="Enter your question or prompt here..."></textarea>
+        <br>
+        <button onclick="askAI()">Submit</button>
+        <div id="response">
+            <strong>Response will appear here...</strong>
+        </div>
+        <br>
+        <button onclick="copyResponse()">Copy to Clipboard</button>
+        <button onclick="saveResponse()">Save as File</button>
+    </div>
+
+    <script>
+        // Ask GPT-3.5 Turbo using OpenAI API
+        async function askAI() {
+            const prompt = document.getElementById('prompt').value.trim();
+            let apiKey = localStorage.getItem('openai_api_key');
+
+            // Prompt for API key if not stored
+            if (!apiKey) {
+                apiKey = prompt("Enter your OpenAI API Key:");
+                if (!apiKey) {
+                    alert('API Key is required to interact with OpenAI.');
+                    return;
+                }
+                localStorage.setItem('openai_api_key', apiKey);
+            }
+
+            if (!prompt) {
+                alert('Please enter a prompt.');
+                return;
+            }
+
+            document.getElementById('response').innerText = 'Loading...';
+
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-3.5-turbo',
+                        messages: [{ role: 'user', content: prompt }]
+                    })
+                });
+
+                const data = await response.json();
+                if (data.choices && data.choices[0] && data.choices[0].message.content) {
+                    document.getElementById('response').innerText = data.choices[0].message.content;
+                } else {
+                    document.getElementById('response').innerText = 'Error: No response from AI.';
+                }
+            } catch (error) {
+                document.getElementById('response').innerText = 'Error: ' + error.message;
+            }
+        }
+
+        // Copy response to clipboard
+        function copyResponse() {
+            const responseText = document.getElementById('response').innerText;
+            if (!responseText || responseText === 'Response will appear here...' || responseText === 'Loading...') {
+                alert('No valid response to copy.');
+                return;
+            }
+
+            navigator.clipboard.writeText(responseText).then(() => {
+                alert('Response copied to clipboard!');
+            }).catch(err => {
+                alert('Failed to copy: ' + err);
+            });
+        }
+
+        // Save response as a text file
+        function saveResponse() {
+            const responseText = document.getElementById('response').innerText;
+            if (!responseText || responseText === 'Response will appear here...' || responseText === 'Loading...') {
+                alert('No valid response to save.');
+                return;
+            }
+
+            const blob = new Blob([responseText], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'response.txt';
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+    </script>
+</body>
+          </html>
